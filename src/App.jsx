@@ -9,6 +9,7 @@ import Services from './components/Services';
 import Admin from './pages/Admin';
 import Login from './pages/Login';
 import BookingPage from './pages/BookingPage';
+import LegalPage from './pages/LegalPage';
 
 import { useLocation } from 'react-router-dom';
 
@@ -39,6 +40,8 @@ function App() {
             <Route path="/services" element={<Services />} />
             <Route path="/book" element={<BookingPage />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/privacy-policy" element={<LegalPage type="privacy" />} />
+            <Route path="/terms-and-conditions" element={<LegalPage type="terms" />} />
             <Route path="/admin" element={<Admin />} />
           </Routes>
         </Layout>

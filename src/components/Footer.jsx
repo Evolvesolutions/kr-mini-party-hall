@@ -70,10 +70,14 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="border-t border-white/10 pt-8 text-center">
+        <div className="border-t border-white/10 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
           <p className="text-gray-500 font-body text-sm">
             &copy; {new Date().getFullYear()} KR Mini Party Hall. All rights reserved.
           </p>
+          <div className="flex items-center gap-5 text-sm font-body">
+            <Link to="/privacy-policy" className="text-gray-400 hover:text-primary transition-colors">Privacy Policy</Link>
+            <Link to="/terms-and-conditions" className="text-gray-400 hover:text-primary transition-colors">Terms &amp; Conditions</Link>
+          </div>
         </div>
       </div>
     </footer>
