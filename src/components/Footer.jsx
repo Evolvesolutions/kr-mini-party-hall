@@ -7,9 +7,12 @@ const Footer = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
           <div className="md:col-span-1">
-            <span className="font-heading text-3xl font-bold text-primary mb-6 block">
-              KR Mini Party Hall
-            </span>
+            <div className="flex items-center gap-3 mb-6">
+              <img src="/logo.png" alt="KR Mini Party Hall Logo" className="h-12 w-auto" />
+              <span className="font-heading text-3xl font-bold text-primary block">
+                KR Mini Party Hall
+              </span>
+            </div>
             <p className="text-gray-400 font-body text-sm leading-relaxed mb-6">
               A premium marriage hall designed for royal weddings and grand celebrations. Experience luxury and elegance on your special day.
             </p>
