@@ -74,7 +74,7 @@ const OurHalls = () => {
                 {/* Image */}
                 <div className="relative h-64 sm:h-80 lg:h-72 xl:h-80 overflow-hidden">
                   <img
-                    src={hall.image_url}
+                    src={hall.image_url?.replace('http://localhost:8000', API_URL)}
                     alt={hall.name}
                     className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                   />

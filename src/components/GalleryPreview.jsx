@@ -81,7 +81,7 @@ const GalleryPreview = () => {
               className={`relative overflow-hidden rounded-2xl group cursor-pointer ${img.span}`}
             >
               <img
-                src={img.image_url}
+                src={img.image_url?.replace('http://localhost:8000', API_URL)}
                 alt={img.title}
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
               />

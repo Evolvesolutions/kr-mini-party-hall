@@ -389,7 +389,7 @@ const CheckAvailability = () => {
                         className={`w-full text-left rounded-2xl border-2 p-4 transition-all duration-200
                           ${selectedHallId === hall.id ? 'border-primary bg-primary/5 shadow-md' : 'border-gray-100 hover:border-primary/40'}`}>
                         <div className="flex gap-3">
-                          <img src={hall.image_url} alt={hall.name}
+                          <img src={hall.image_url?.replace('http://localhost:8000', API_URL)} alt={hall.name}
                             className="w-16 h-16 rounded-xl object-cover flex-shrink-0 bg-gray-100" />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2">
@@ -543,7 +543,7 @@ const CheckAvailability = () => {
                   {/* Hall card */}
                   {selectedHall && (
                     <div className="flex gap-4 bg-primary/5 border border-primary/10 rounded-2xl p-4">
-                      <img src={selectedHall.image_url} alt={selectedHall.name}
+                      <img src={selectedHall.image_url?.replace('http://localhost:8000', API_URL)} alt={selectedHall.name}
                         className="w-20 h-20 rounded-xl object-cover flex-shrink-0 bg-gray-100" />
                       <div>
                         <p className="font-bold text-text">{selectedHall.name}</p>

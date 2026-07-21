@@ -545,7 +545,7 @@ function Admin() {
                         {galleryForm.image_url && (
                           <div className="mb-3">
                             <p className="text-xs text-gray-400 mb-1">Preview:</p>
-                            <img src={galleryForm.image_url} alt="preview" className="h-24 w-40 object-cover rounded-lg border" onError={e => e.target.style.display = 'none'} />
+                            <img src={galleryForm.image_url?.replace('http://localhost:8000', API_URL)} alt="preview" className="h-24 w-40 object-cover rounded-lg border" onError={e => e.target.style.display = 'none'} />
                           </div>
                         )}
                         <button
@@ -575,7 +575,7 @@ function Admin() {
                           animate={{ opacity: 1, scale: 1 }}
                           className="relative group rounded-xl overflow-hidden bg-white shadow-sm aspect-square"
                         >
-                          <img src={img.image_url} alt={img.title} className="w-full h-full object-cover" />
+                          <img src={img.image_url?.replace('http://localhost:8000', API_URL)} alt={img.title} className="w-full h-full object-cover" />
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all duration-300 flex flex-col items-center justify-center">
                             <div className="opacity-0 group-hover:opacity-100 transition-opacity text-center px-2">
                               <p className="text-white text-sm font-semibold mb-1">{img.title}</p>
@@ -706,7 +706,7 @@ function Admin() {
                       {halls.map(hall => (
                         <div key={hall.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col sm:flex-row">
                           <div className="sm:w-1/3 h-48 sm:h-auto relative">
-                            <img src={hall.image_url} alt={hall.name} className="w-full h-full object-cover" />
+                            <img src={hall.image_url?.replace('http://localhost:8000', API_URL)} alt={hall.name} className="w-full h-full object-cover" />
                           </div>
                           <div className="p-4 flex-1 flex flex-col justify-between">
                             <div>
