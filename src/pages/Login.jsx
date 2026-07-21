@@ -201,13 +201,6 @@ function Login() {
           </button>
         </div>
 
-        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-          <p className="text-sm text-gray-600 font-medium mb-2">Demo Accounts:</p>
-          <div className="text-xs text-gray-500 space-y-1">
-            <p><strong>Admin:</strong> admin@grandkalyana.com / admin123</p>
-            <p><strong>User:</strong> user@example.com / user123</p>
-          </div>
-        </div>
       </motion.div>
     </div>
   );
