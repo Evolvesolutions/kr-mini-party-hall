@@ -1,18 +1,39 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 
-const images = [
-  { src: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=800&auto=format&fit=crop', span: 'md:col-span-2 md:row-span-2', label: 'Grand Wedding Ceremony' },
-  { src: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=800&auto=format&fit=crop', span: '', label: 'Royal Stage Decoration' },
-  { src: 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?q=80&w=800&auto=format&fit=crop', span: '', label: 'Floral Arrangements' },
-  { src: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=800&auto=format&fit=crop', span: '', label: 'Banquet Hall Setup' },
-  { src: 'https://images.unsplash.com/photo-1544865181-e2e4ff9b57a6?q=80&w=800&auto=format&fit=crop', span: '', label: 'Elegant Interior' },
-];
+const API_URL = 'https://kr-mini-party-hall-server.onrender.com';
 
 const GalleryPreview = () => {
+  const [images, setImages] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchGallery = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/gallery`);
+        if (res.ok) {
+          const data = await res.json();
+          // Take only the first 5 images for preview, add span logic if needed
+          const processedData = data.slice(0, 5).map((img, i) => ({
+            ...img,
+            span: i === 0 ? 'md:col-span-2 md:row-span-2' : ''
+          }));
+          setImages(processedData);
+        }
+      } catch (error) {
+        console.error("Failed to fetch gallery:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchGallery();
+  }, []);
+
+  if (loading) return null; // or a loading spinner
   return (
-    <section className="py-24 bg-secondary/10">
+    <section id="gallery" className="py-24 bg-secondary/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-12 gap-6">
           <div>
@@ -60,13 +81,13 @@ const GalleryPreview = () => {
               className={`relative overflow-hidden rounded-2xl group cursor-pointer ${img.span}`}
             >
               <img
-                src={img.src}
-                alt={img.label}
+                src={img.image_url}
+                alt={img.title}
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300 flex items-end p-4">
                 <p className="text-white font-body text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-y-2 group-hover:translate-y-0">
-                  {img.label}
+                  {img.title}
                 </p>
               </div>
             </motion.div>

@@ -6,18 +6,18 @@ import {
 } from 'lucide-react';
 
 const features = [
-  { icon: <Wind size={32} />, title: "Fully Air Conditioned" },
-  { icon: <Utensils size={32} />, title: "Spacious Dining Hall" },
-  { icon: <Sparkles size={32} />, title: "Premium Stage Decoration" },
-  { icon: <Gem size={32} />, title: "Luxury Bridal Room" },
-  { icon: <UserCheck size={32} />, title: "Groom Suite" },
+  // { icon: <Wind size={32} />, title: "Fully Air Conditioned" },
+  { icon: <Utensils size={32} />, title: " Dining Hall" },
+  // { icon: <Sparkles size={32} />, title: "Premium Stage Decoration" },
+  // { icon: <Gem size={32} />, title: "Luxury Bridal Room" },
+  // { icon: <UserCheck size={32} />, title: "Groom Suite" },
   { icon: <BatteryCharging size={32} />, title: "100% Power Backup" },
-  { icon: <ArrowUpToLine size={32} />, title: "Lift Facility" },
+  // { icon: <ArrowUpToLine size={32} />, title: "Lift Facility" },
   { icon: <Video size={32} />, title: "CCTV Security" },
-  { icon: <Accessibility size={32} />, title: "Wheelchair Access" },
-  { icon: <Droplet size={32} />, title: "RO Drinking Water" },
-  { icon: <Wifi size={32} />, title: "High-Speed WiFi" },
-  { icon: <Car size={32} />, title: "Large Car Parking" },
+  // { icon: <Accessibility size={32} />, title: "Wheelchair Access" },
+  // { icon: <Droplet size={32} />, title: "RO Drinking Water" },
+  // { icon: <Wifi size={32} />, title: "High-Speed WiFi" },
+  // { icon: <Car size={32} />, title: "Large Car Parking" },
   { icon: <ShieldAlert size={32} />, title: "Fire Safety" },
   { icon: <BadgeCheck size={32} />, title: "Professional Management" }
 ];

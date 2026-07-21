@@ -4,8 +4,7 @@ const services = [
   "Wedding Ceremony", "Reception", "Engagement", "Birthday Celebration",
   "Baby Shower", "Corporate Meeting", "Conference", "Anniversary",
   "Naming Ceremony", "Cultural Events", "Photography Space", 
-  "Decoration Services", "Catering Support", "Music & DJ", 
-  "Flower Decoration", "Luxury Stage Decoration"
+  "Decoration Services"
 ];
 
 const Services = () => {

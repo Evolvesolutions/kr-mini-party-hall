@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Menu, X, LogIn, LogOut, User, LayoutDashboard } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, isAdmin, logout } = useAuth();
 
   // Only show transparent navbar on the Home page
   const isHomePage = location.pathname === '/';
@@ -30,6 +33,11 @@ const Navbar = () => {
     { name: 'Halls', path: '/halls' },
     { name: 'Services', path: '/services' },
   ];
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   return (
     <nav
@@ -65,12 +73,46 @@ const Navbar = () => {
                 {link.name}
               </NavLink>
             ))}
-            <Link
-              to="/halls"
-              className="bg-primary hover:bg-accent text-white px-6 py-2 rounded-full transition-colors font-medium shadow-lg hover:shadow-primary/50"
-            >
-              Book Now
-            </Link>
+            
+            {isAdmin && (
+              <NavLink
+                to="/admin"
+                className={({ isActive }) =>
+                  `font-body font-medium transition-colors duration-200 hover:text-primary relative pb-1 flex items-center gap-1
+                  ${isActive
+                    ? 'text-primary after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-primary after:rounded-full'
+                    : isSolid ? 'text-text' : 'text-white/90'
+                  }`
+                }
+              >
+                <LayoutDashboard size={18} />
+                Admin
+              </NavLink>
+            )}
+            
+            {user ? (
+              <div className="flex items-center space-x-4">
+                <span className={`font-body text-sm ${isSolid ? 'text-text' : 'text-white/90'}`}>
+                  <User size={16} className="inline mr-1" />
+                  {user.email}
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 text-red-600 hover:text-red-800 font-medium transition-colors"
+                >
+                  <LogOut size={18} />
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="flex items-center gap-2 bg-primary hover:bg-accent text-white px-6 py-2 rounded-full transition-colors font-medium shadow-lg hover:shadow-primary/50"
+              >
+                <LogIn size={18} />
+                Login
+              </Link>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -112,15 +154,51 @@ const Navbar = () => {
                   {link.name}
                 </NavLink>
               ))}
-              <div className="pt-4">
-                <Link
-                  to="/halls"
+              
+              {isAdmin && (
+                <NavLink
+                  to="/admin"
+                  className={({ isActive }) =>
+                    `block px-3 py-3 font-body rounded-md transition-colors flex items-center gap-2
+                    ${isActive
+                      ? 'text-primary bg-secondary/50 font-semibold'
+                      : 'text-text hover:text-primary hover:bg-secondary/30'
+                    }`
+                  }
                   onClick={() => setIsOpen(false)}
-                  className="block w-full text-center bg-primary hover:bg-accent text-white px-6 py-3 rounded-md transition-colors font-medium"
                 >
-                  Book Now
+                  <LayoutDashboard size={18} />
+                  Admin Panel
+                </NavLink>
+              )}
+              
+              {user ? (
+                <>
+                  <div className="px-3 py-3 font-body text-text flex items-center gap-2">
+                    <User size={16} />
+                    {user.email}
+                  </div>
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setIsOpen(false);
+                    }}
+                    className="block w-full text-left px-3 py-3 font-body rounded-md text-red-600 hover:text-red-800 hover:bg-red-50 transition-colors flex items-center gap-2"
+                  >
+                    <LogOut size={18} />
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <Link
+                  to="/login"
+                  onClick={() => setIsOpen(false)}
+                  className="block w-full text-center bg-primary hover:bg-accent text-white px-6 py-3 rounded-md transition-colors font-medium flex items-center justify-center gap-2"
+                >
+                  <LogIn size={18} />
+                  Login
                 </Link>
-              </div>
+              )}
             </div>
           </motion.div>
         )}
