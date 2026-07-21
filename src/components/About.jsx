@@ -1,6 +1,8 @@
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useState } from 'react';
 
 const About = () => {
+  const [isStoryOpen, setIsStoryOpen] = useState(false);
   return (
     <section id="about" className="py-24 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -79,9 +81,24 @@ const About = () => {
                 </div>
               </div>
 
-              <button className="bg-text hover:bg-primary text-white font-body px-8 py-4 rounded-full transition-colors duration-300 shadow-lg font-medium">
-                Discover Our Story
+              <button
+                type="button"
+                onClick={() => setIsStoryOpen(open => !open)}
+                aria-expanded={isStoryOpen}
+                aria-controls="our-story"
+                className="bg-text hover:bg-primary text-white font-body px-8 py-4 rounded-full transition-colors duration-300 shadow-lg font-medium"
+              >
+                {isStoryOpen ? 'Show Less' : 'Discover Our Story'}
               </button>
+              <AnimatePresence initial={false}>
+                {isStoryOpen && (
+                  <motion.div
+                    id="our-story"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden"
+                  >
             </motion.div>
           </div>
         </div>

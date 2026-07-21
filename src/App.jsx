@@ -1,8 +1,10 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
+import WhatsAppButton from './components/WhatsAppButton';
 import About from './components/About';
 import OurHalls from './components/OurHalls';
 import Services from './components/Services';
@@ -17,10 +19,25 @@ function Layout({ children }) {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
 
+  useEffect(() => {
+    if (!location.hash) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    const sectionId = location.hash.slice(1);
+    const frame = requestAnimationFrame(() => {
+      document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' });
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [location.hash, location.pathname]);
+
   return (
     <div className="flex flex-col min-h-screen">
       {!isAdminRoute && <Navbar />}
       <main className="flex-grow">
+      {!isAdminRoute && <WhatsAppButton />}
         {children}
       </main>
       {!isAdminRoute && <Footer />}

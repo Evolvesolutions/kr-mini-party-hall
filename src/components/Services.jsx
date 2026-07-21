@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 const services = [
   "Wedding Ceremony", "Reception", "Engagement", "Birthday Celebration",
@@ -8,6 +9,7 @@ const services = [
 ];
 
 const Services = () => {
+  const navigate = useNavigate();
   return (
     <section id="services" className="py-24 bg-text text-white relative overflow-hidden">
       {/* Background Pattern */}
@@ -48,6 +50,7 @@ const Services = () => {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.4 }}
+              onClick={() => navigate('/halls')}
               className="border-2 border-primary text-primary hover:bg-primary hover:text-white font-body px-8 py-3 rounded-full transition-colors duration-300 font-medium"
             >
               View Packages

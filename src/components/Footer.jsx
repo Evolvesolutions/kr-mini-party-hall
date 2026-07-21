@@ -20,7 +20,7 @@ const Footer = () => {
               <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-colors">
                 <Globe size={20} />
               </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-colors">
+              <a href="https://wa.me/917550120574?text=Hello%20KR%20Mini%20Party%20Hall%2C%20I%20would%20like%20to%20know%20more%20about%20your%20availability%20and%20packages." target="_blank" rel="noreferrer" aria-label="Chat with KR Mini Party Hall on WhatsApp" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-colors">
                 <MessageCircle size={20} />
               </a>
               <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-colors">
@@ -32,11 +32,11 @@ const Footer = () => {
           <div>
             <h4 className="font-heading text-xl text-white mb-6">Quick Links</h4>
             <ul className="space-y-4 font-body">
-              <li><a href="#home" className="text-gray-400 hover:text-primary transition-colors">Home</a></li>
-              <li><a href="#about" className="text-gray-400 hover:text-primary transition-colors">About Us</a></li>
-              <li><a href="#halls" className="text-gray-400 hover:text-primary transition-colors">Our Halls</a></li>
-              <li><a href="#services" className="text-gray-400 hover:text-primary transition-colors">Services</a></li>
-              <li><a href="#gallery" className="text-gray-400 hover:text-primary transition-colors">Gallery</a></li>
+              <li><Link to="/" className="text-gray-400 hover:text-primary transition-colors">Home</Link></li>
+              <li><Link to="/about" className="text-gray-400 hover:text-primary transition-colors">About Us</Link></li>
+              <li><Link to="/halls" className="text-gray-400 hover:text-primary transition-colors">Our Halls</Link></li>
+              <li><Link to="/services" className="text-gray-400 hover:text-primary transition-colors">Services</Link></li>
+              <li><Link to="/#gallery" className="text-gray-400 hover:text-primary transition-colors">Gallery</Link></li>
             </ul>
           </div>
 
