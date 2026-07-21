@@ -74,7 +74,7 @@ const About = () => {
                   <p className="text-text font-body text-sm font-medium uppercase tracking-wider">Luxury Halls</p>
                 </div>
                 <div>
-                  <h3 className="text-4xl font-heading text-primary mb-2">1500</h3>
+                  <h3 className="text-4xl font-heading text-primary mb-2">100 - 200</h3>
                   <p className="text-text font-body text-sm font-medium uppercase tracking-wider">Guest Capacity</p>
                 </div>
               </div>
