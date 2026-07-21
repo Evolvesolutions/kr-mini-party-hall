@@ -99,6 +99,12 @@ const About = () => {
                     exit={{ opacity: 0, height: 0 }}
                     className="overflow-hidden"
                   >
+                    <p className="mt-6 border-l-4 border-primary pl-4 font-body leading-relaxed text-gray-600">
+                      Built around warm hospitality and thoughtful celebrations, KR Mini Party Hall brings families together in a comfortable, elegant setting. Our team works closely with every host to make each occasion feel personal, seamless, and memorable.
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           </div>
         </div>
