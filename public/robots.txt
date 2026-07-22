@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Disallow admin and login pages
+Disallow: /admin
+Disallow: /login
+
+# Sitemap location
+Sitemap: https://krminipartyhall.com/sitemap.xml
