@@ -4,7 +4,9 @@ import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import { Loader2, User, Lock, Mail } from 'lucide-react';
 
-const API_URL = 'https://kr-mini-party-hall-server.onrender.com';
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:8000'
+  : 'https://kr-mini-party-hall-server.onrender.com';
 
 function Login() {
   const [isLogin, setIsLogin] = useState(true);

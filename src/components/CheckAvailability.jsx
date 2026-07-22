@@ -21,7 +21,9 @@ const GUEST_RANGES = [
 
 const STEPS = ['Date & Hall', 'Event Details', 'Your Info', 'Review & Pay'];
 
-const API_URL = 'https://kr-mini-party-hall-server.onrender.com';
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:8000'
+  : 'https://kr-mini-party-hall-server.onrender.com';
 
 // Reusable input field component
 const Field = ({ label, icon: Icon, error, children }) => (

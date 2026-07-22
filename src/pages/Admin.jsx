@@ -8,7 +8,9 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const API_URL = 'https://kr-mini-party-hall-server.onrender.com';
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:8000'
+  : 'https://kr-mini-party-hall-server.onrender.com';
 
 function Admin() {
   const { token, user, logout, isAdmin } = useAuth();
