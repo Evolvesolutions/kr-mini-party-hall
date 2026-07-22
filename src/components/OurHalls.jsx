@@ -81,8 +81,9 @@ const OurHalls = () => {
                     className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                   />
                   {/* Price badge */}
-                  <div className="absolute top-5 right-5 bg-white/95 backdrop-blur-sm px-5 py-2 rounded-full font-body font-bold text-primary shadow-lg text-base z-10">
-                    ₹{hall.price}
+                  <div className="absolute top-5 right-5 bg-white/95 backdrop-blur-sm px-5 py-2 rounded-2xl font-body font-bold text-primary shadow-lg text-xs z-10 flex flex-col items-center">
+                    <span className="text-base">₹{hall.price}</span>
+                    <span className="text-[20px] text-gray-900 font-normal">₹3,000 Booking Advance</span>
                   </div>
                 </div>
 

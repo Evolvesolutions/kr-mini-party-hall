@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { generateInvoicePDF } from '../utils/invoice';
 import {
   Calendar, Users, Building2, CheckCircle, ChevronLeft, ChevronRight,
   Loader2, User, Phone, Mail, MapPin, Clock, Star, CreditCard,
@@ -139,7 +140,7 @@ const CheckAvailability = () => {
       const orderRes = await fetch(`${API_URL}/api/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hall_id: selectedHallId, amount: totalPrice * 100 }),
+        body: JSON.stringify({ hall_id: selectedHallId, amount: 3000 * 100 }), // flat 3,000 INR advance
       });
       const orderData = await orderRes.json();
       if (!orderRes.ok) throw new Error(orderData.detail || 'Failed to create order');
@@ -149,7 +150,7 @@ const CheckAvailability = () => {
         amount: orderData.amount,
         currency: orderData.currency,
         name: 'Grand Kalyana',
-        description: `${eventType} – ${MONTHS[currentMonth]} ${selectedDate}, ${currentYear}`,
+        description: `${eventType} – ${MONTHS[currentMonth]} ${selectedDate}, ${currentYear} (Booking Advance)`,
         order_id: orderData.order_id,
         handler: async (response) => {
           try {
@@ -164,7 +165,7 @@ const CheckAvailability = () => {
               time_slot: `${timeSlot.label} (${timeSlot.timing})`,
               hall_id: selectedHallId,
               package_id: null,
-              amount_paid: totalPrice,
+              amount_paid: 3000, // advance paid is 3,000
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_order_id: response.razorpay_order_id,
               razorpay_signature: response.razorpay_signature,
@@ -215,17 +216,21 @@ const CheckAvailability = () => {
     setErrors({});
   };
 
-  useEffect(() => {
-    if (bookingSubmitted) {
-      const timer = setTimeout(() => {
-        navigate('/');
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [bookingSubmitted, navigate]);
-
   // ── Booking Confirmed Screen ───────────────────────────────────────────────
   if (bookingSubmitted) {
+    const bookingDetailsForInvoice = {
+      id: bookingRef,
+      customer_name: form.customer_name,
+      customer_email: form.customer_email,
+      customer_phone: form.customer_phone,
+      customer_address: form.customer_address,
+      event_type: eventType,
+      event_date: new Date(currentYear, currentMonth, selectedDate).toISOString().split('T')[0],
+      time_slot: `${timeSlot.label} (${timeSlot.timing})`,
+      price: totalPrice,
+      amount_paid: 3000
+    };
+
     return (
       <section className="py-24 bg-gradient-to-br from-amber-50 via-white to-yellow-50 min-h-screen flex items-center">
         <div className="max-w-xl mx-auto px-4 w-full">
@@ -241,11 +246,11 @@ const CheckAvailability = () => {
               </div>
               <span className="absolute -top-1 -right-1 text-3xl">🎉</span>
             </div>
-            <h2 className="font-heading text-3xl text-text mb-2">Successfully booked the hall!</h2>
-            <p className="text-gray-500 font-body mb-4">
-              Redirecting you to the home page in a few seconds...
+            <h2 className="font-heading text-3xl text-text mb-2">Booking Confirmed!</h2>
+            <p className="text-gray-500 font-body mb-6">
+              Thank you for your reservation. You can now download your invoice.
             </p>
-            <div className="bg-primary/5 border border-primary/20 rounded-2xl px-6 py-4 mb-6 text-left space-y-2">
+            <div className="bg-primary/5 border border-primary/20 rounded-2xl px-6 py-4 mb-8 text-left space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Booking Ref</span>
                 <span className="font-bold text-primary">#{bookingRef}</span>
@@ -258,10 +263,33 @@ const CheckAvailability = () => {
                 <span className="text-gray-500">Hall</span>
                 <span className="font-semibold text-text">{selectedHall?.name}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Amount Paid</span>
-                <span className="font-bold text-green-600">₹{totalPrice.toLocaleString('en-IN')}</span>
+              <div className="flex justify-between text-sm border-t border-dashed border-gray-200 pt-2">
+                <span className="text-gray-500">Total Price</span>
+                <span className="font-semibold text-text">₹{totalPrice.toLocaleString('en-IN')}</span>
               </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Advance Paid</span>
+                <span className="font-bold text-green-600">₹3,000</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Balance Due at Venue</span>
+                <span className="font-semibold text-primary">₹{(totalPrice - 3000).toLocaleString('en-IN')}</span>
+              </div>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={() => generateInvoicePDF(bookingDetailsForInvoice, selectedHall)}
+                className="bg-primary hover:bg-accent text-white px-6 py-3 rounded-full font-bold text-sm transition-all shadow-md flex items-center justify-center gap-2"
+              >
+                <FileText size={16} /> Download Invoice PDF
+              </button>
+              <button
+                onClick={() => navigate('/')}
+                className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-full font-bold text-sm transition-all flex items-center justify-center gap-2"
+              >
+                Go to Homepage
+              </button>
             </div>
           </motion.div>
         </div>
@@ -597,18 +625,22 @@ const CheckAvailability = () => {
                     <div className="space-y-3 text-sm">
                       <div className="flex justify-between items-center">
                         <div>
-                          <p className="text-gray-600 font-medium">{timeSlot.label} Slot</p>
+                          <p className="text-gray-600 font-medium">Total Hall Rental ({timeSlot.label} Slot)</p>
                           <p className="text-xs text-gray-400">{timeSlot.timing}</p>
                         </div>
-                        <span className="font-bold text-lg text-text">₹{timeSlot.price.toLocaleString('en-IN')}</span>
+                        <span className="font-bold text-base text-text">₹{timeSlot.price.toLocaleString('en-IN')}</span>
                       </div>
                       <div className="flex justify-between text-xs text-gray-400 border-t border-dashed border-gray-200 pt-2">
                         <span>GST & Taxes</span>
                         <span>Included</span>
                       </div>
+                      <div className="flex justify-between text-xs text-gray-500 pt-1">
+                        <span>Remaining Balance (Pay at Venue)</span>
+                        <span className="font-semibold text-text">₹{(totalPrice - 3000).toLocaleString('en-IN')}</span>
+                      </div>
                       <div className="bg-primary/10 rounded-xl px-4 py-3 flex justify-between font-bold text-base mt-1">
-                        <span className="text-text">Total Payable</span>
-                        <span className="text-primary text-xl">₹{totalPrice.toLocaleString('en-IN')}</span>
+                        <span className="text-text">Booking Advance (Payable Now)</span>
+                        <span className="text-primary text-xl">₹3,000</span>
                       </div>
                     </div>
 
@@ -647,7 +679,7 @@ const CheckAvailability = () => {
                   {loading ? (
                     <><Loader2 size={16} className="animate-spin" /> Processing…</>
                   ) : (
-                    <><CreditCard size={16} /> Pay ₹{totalPrice.toLocaleString('en-IN')}</>
+                    <><CreditCard size={16} /> Pay Advance ₹3,000</>
                   )}
                 </button>
               )}

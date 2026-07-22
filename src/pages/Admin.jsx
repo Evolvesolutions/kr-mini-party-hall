@@ -4,9 +4,10 @@ import { useAuth } from '../context/AuthContext';
 import {
   LayoutDashboard, CalendarCheck, Users, Images,
   Home, LogOut, Menu, X, Trash2, Edit, Plus, CheckCircle,
-  XCircle, Clock, ChevronRight, Building2, Maximize
+  XCircle, Clock, ChevronRight, Building2, Maximize, FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { generateInvoicePDF } from '../utils/invoice';
 
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? 'http://localhost:8000'
@@ -446,15 +447,26 @@ function Admin() {
                                     }`}>{b.status}</span>
                                 </td>
                                 <td className="px-5 py-4 text-sm space-x-2">
-                                  {b.status === 'pending' && (
-                                    <>
-                                      <button onClick={() => updateBookingStatus(b.id, 'confirmed')} className="text-green-600 hover:text-green-800 font-medium">Confirm</button>
-                                      <button onClick={() => updateBookingStatus(b.id, 'cancelled')} className="text-red-500 hover:text-red-700 font-medium">Cancel</button>
-                                    </>
-                                  )}
-                                  <button onClick={() => deleteBooking(b.id)} className="text-gray-500 hover:text-red-600 font-medium flex items-center gap-1">
-                                    <Trash2 size={14} /> Delete
-                                  </button>
+                                  <div className="flex flex-wrap gap-2 items-center">
+                                    {b.status === 'pending' && (
+                                      <>
+                                        <button onClick={() => updateBookingStatus(b.id, 'confirmed')} className="text-green-600 hover:text-green-800 font-medium">Confirm</button>
+                                        <button onClick={() => updateBookingStatus(b.id, 'cancelled')} className="text-red-500 hover:text-red-700 font-medium">Cancel</button>
+                                      </>
+                                    )}
+                                    <button 
+                                      onClick={() => {
+                                        const hall = halls.find(h => h.id === b.hall_id);
+                                        generateInvoicePDF(b, hall);
+                                      }}
+                                      className="text-purple-600 hover:text-purple-800 font-medium flex items-center gap-1"
+                                    >
+                                      <FileText size={14} /> Invoice
+                                    </button>
+                                    <button onClick={() => deleteBooking(b.id)} className="text-gray-500 hover:text-red-600 font-medium flex items-center gap-1">
+                                      <Trash2 size={14} /> Delete
+                                    </button>
+                                  </div>
                                 </td>
                               </tr>
                             ))}
@@ -635,7 +647,7 @@ function Admin() {
                         <input type="text" required value={hallForm.area} onChange={e => setHallForm({ ...hallForm, area: e.target.value })} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-400 focus:outline-none" />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Price (number) *</label>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Full Price (number) * <span className="text-purple-600 font-semibold">(Users only pay ₹3,000 advance online)</span></label>
                         <input type="number" step="0.01" required value={hallForm.price} onChange={e => setHallForm({ ...hallForm, price: e.target.value })} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-400 focus:outline-none" />
                       </div>
                       <div className="md:col-span-2">
