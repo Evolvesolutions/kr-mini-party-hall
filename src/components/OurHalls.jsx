@@ -82,7 +82,14 @@ const OurHalls = () => {
                   />
                   {/* Price badge */}
                   <div className="absolute top-5 right-5 bg-white/95 backdrop-blur-sm px-5 py-2 rounded-2xl font-body font-bold text-primary shadow-lg text-xs z-10 flex flex-col items-center">
-                    <span className="text-base">₹{hall.price}</span>
+                    {hall.morning_price || hall.evening_price ? (
+                      <div className="text-right">
+                        {hall.morning_price ? <div className="text-sm">Morning: ₹{hall.morning_price}</div> : null}
+                        {hall.evening_price ? <div className="text-sm">Evening: ₹{hall.evening_price}</div> : null}
+                      </div>
+                    ) : (
+                      <span className="text-base">₹{hall.price}</span>
+                    )}
                     <span className="text-[20px] text-gray-900 font-normal">₹3,000 Booking Advance</span>
                   </div>
                 </div>

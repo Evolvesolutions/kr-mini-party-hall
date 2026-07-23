@@ -26,8 +26,9 @@ function Admin() {
   const [error, setError] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [galleryForm, setGalleryForm] = useState({ title: '', image_url: '', category: '' });
-  const [hallForm, setHallForm] = useState({ name: '', capacity: '', dining_capacity: '', area: '', price: '', description: '', features: '', image_url: '', time_slots: [], packages_included: '' });
+  const [hallForm, setHallForm] = useState({ name: '', capacity: '', dining_capacity: '', area: '', price: '', morning_price: '', evening_price: '', description: '', features: '', image_url: '', time_slots: [], packages_included: '' });
   const [editingHallId, setEditingHallId] = useState(null);
+  const [activePriceSlot, setActivePriceSlot] = useState('morning');
   const [galleryLoading, setGalleryLoading] = useState(false);
   const [hallLoading, setHallLoading] = useState(false);
   const [galleryFile, setGalleryFile] = useState(null);
@@ -151,13 +152,23 @@ function Admin() {
       const url = editingHallId ? `${API_URL}/api/admin/halls/${editingHallId}` : `${API_URL}/api/admin/halls`;
       const method = editingHallId ? 'PUT' : 'POST';
 
+      const resolvedPrice = (() => {
+        const p = parseFloat(hallForm.price);
+        if (!isNaN(p) && p > 0) return p;
+        const pm = parseFloat(hallForm.morning_price);
+        if (!isNaN(pm) && pm > 0) return pm;
+        const pe = parseFloat(hallForm.evening_price);
+        if (!isNaN(pe) && pe > 0) return pe;
+        return 0;
+      })();
+
       const res = await fetch(url, {
         method: method,
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ ...hallForm, image_url: imageUrl, capacity: parseInt(hallForm.capacity), dining_capacity: parseInt(hallForm.dining_capacity) || 0, price: parseFloat(hallForm.price) })
+        body: JSON.stringify({ ...hallForm, image_url: imageUrl, capacity: parseInt(hallForm.capacity), dining_capacity: parseInt(hallForm.dining_capacity) || 0, price: resolvedPrice, morning_price: hallForm.morning_price ? parseFloat(hallForm.morning_price) : undefined, evening_price: hallForm.evening_price ? parseFloat(hallForm.evening_price) : undefined })
       });
       if (res.ok) {
-    setHallForm({ name: '', capacity: '', dining_capacity: '', area: '', price: '', description: '', features: '', image_url: '', time_slots: [], packages_included: '' });
+    setHallForm({ name: '', capacity: '', dining_capacity: '', area: '', price: '', morning_price: '', evening_price: '', description: '', features: '', image_url: '', time_slots: [], packages_included: '' });
         setHallFile(null);
         setEditingHallId(null);
         fetchData();
@@ -171,7 +182,7 @@ function Admin() {
 
   const cancelEdit = () => {
     setEditingHallId(null);
-    setHallForm({ name: '', capacity: '', dining_capacity: '', area: '', price: '', description: '', features: '', image_url: '', time_slots: [], packages_included: '' });
+    setHallForm({ name: '', capacity: '', dining_capacity: '', area: '', price: '', morning_price: '', evening_price: '', description: '', features: '', image_url: '', time_slots: [], packages_included: '' });
     setHallFile(null);
   };
 
@@ -182,13 +193,18 @@ function Admin() {
       capacity: hall.capacity.toString(),
       dining_capacity: (hall.dining_capacity || 0).toString(),
       area: hall.area,
-      price: hall.price.toString(),
+      price: hall.price?.toString() || '',
+      morning_price: hall.morning_price ? hall.morning_price.toString() : '',
+      evening_price: hall.evening_price ? hall.evening_price.toString() : '',
       description: hall.description,
       features: hall.features,
       image_url: hall.image_url,
       time_slots: hall.time_slots || [],
       packages_included: hall.packages_included || ''
     });
+    // set active price slot to morning if available, otherwise evening
+    if (hall.morning_price) setActivePriceSlot('morning');
+    else if (hall.evening_price) setActivePriceSlot('evening');
     setHallFile(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -332,7 +348,6 @@ function Admin() {
       </div>
     );
   }
-
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'bookings', label: 'Bookings', icon: CalendarCheck, badge: bookings.filter(b => b.status === 'pending').length },
@@ -809,8 +824,30 @@ function Admin() {
                         <input type="text" required value={hallForm.area} onChange={e => setHallForm({ ...hallForm, area: e.target.value })} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-400 focus:outline-none" />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Full Price (number) * <span className="text-purple-600 font-semibold">(Users only pay ₹3,000 advance online)</span></label>
-                        <input type="number" step="0.01" required value={hallForm.price} onChange={e => setHallForm({ ...hallForm, price: e.target.value })} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-400 focus:outline-none" />
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Slot Prices (set separately)</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">Morning Price</label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={hallForm.morning_price}
+                              onChange={e => setHallForm({ ...hallForm, morning_price: e.target.value })}
+                              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-400 focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">Evening Price</label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={hallForm.evening_price}
+                              onChange={e => setHallForm({ ...hallForm, evening_price: e.target.value })}
+                              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-400 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-400 mt-2">You can set both morning and evening prices independently. Make sure to enable the corresponding time slot above.</p>
                       </div>
                       <div className="md:col-span-2">
                         <label className="block text-xs font-medium text-gray-500 mb-1">Features (one per line) *</label>
@@ -828,10 +865,15 @@ function Admin() {
                               type="checkbox"
                               checked={hallForm.time_slots.includes('Morning (8 AM - 3 PM)')}
                               onChange={(e) => {
-                                const newSlots = e.target.checked
+                                const checked = e.target.checked;
+                                const newSlots = checked
                                   ? [...hallForm.time_slots, 'Morning (8 AM - 3 PM)']
                                   : hallForm.time_slots.filter(s => s !== 'Morning (8 AM - 3 PM)');
                                 setHallForm({ ...hallForm, time_slots: newSlots });
+                                if (checked) setActivePriceSlot('morning');
+                                else if (activePriceSlot === 'morning') {
+                                  if (newSlots.includes('Evening (5 PM - 11 PM)')) setActivePriceSlot('evening');
+                                }
                               }}
                               className="rounded text-purple-600 focus:ring-purple-400 w-4 h-4"
                             />
@@ -842,10 +884,15 @@ function Admin() {
                               type="checkbox"
                               checked={hallForm.time_slots.includes('Evening (5 PM - 11 PM)')}
                               onChange={(e) => {
-                                const newSlots = e.target.checked
+                                const checked = e.target.checked;
+                                const newSlots = checked
                                   ? [...hallForm.time_slots, 'Evening (5 PM - 11 PM)']
                                   : hallForm.time_slots.filter(s => s !== 'Evening (5 PM - 11 PM)');
                                 setHallForm({ ...hallForm, time_slots: newSlots });
+                                if (checked) setActivePriceSlot('evening');
+                                else if (activePriceSlot === 'evening') {
+                                  if (newSlots.includes('Morning (8 AM - 3 PM)')) setActivePriceSlot('morning');
+                                }
                               }}
                               className="rounded text-purple-600 focus:ring-purple-400 w-4 h-4"
                             />
@@ -888,7 +935,16 @@ function Admin() {
                             <div>
                               <div className="flex justify-between items-start mb-2">
                                 <h4 className="font-semibold text-gray-800">{hall.name}</h4>
-                                <span className="text-purple-600 font-bold text-sm">₹{hall.price}</span>
+                                <div className="text-right">
+                                  {hall.morning_price || hall.evening_price ? (
+                                    <>
+                                      {hall.morning_price ? <div className="text-purple-600 font-bold text-sm">M: ₹{hall.morning_price}</div> : null}
+                                      {hall.evening_price ? <div className="text-purple-600 font-bold text-sm">E: ₹{hall.evening_price}</div> : null}
+                                    </>
+                                  ) : (
+                                    <span className="text-purple-600 font-bold text-sm">₹{hall.price}</span>
+                                  )}
+                                </div>
                               </div>
                               <p className="text-xs text-gray-500 mb-1"><Users size={12} className="inline mr-1" /> {hall.capacity} Guests | <Maximize size={12} className="inline mr-1" /> {hall.area}</p>
                               {hall.packages_included && hall.packages_included.trim() !== "" && (

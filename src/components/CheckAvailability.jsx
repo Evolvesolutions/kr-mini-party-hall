@@ -14,8 +14,8 @@ const MONTHS = ['January','February','March','April','May','June','July','August
 const DAYS = ['Su','Mo','Tu','We','Th','Fr','Sa'];
 const EVENT_TYPES = ['Wedding','Reception','Engagement','Birthday','Corporate','Anniversary','Naming Ceremony','Haldi'];
 const TIME_SLOTS = [
-  { id: 'morning', label: 'Morning', timing: '8:00 AM – 3:00 PM', price: 22000, icon: '🌅' },
-  { id: 'evening', label: 'Evening', timing: '5:00 PM – 11:00 PM', price: 20000, icon: '🌆' },
+  { id: 'morning', label: 'Morning', timing: '8:00 AM – 3:00 PM', icon: '🌅' },
+  { id: 'evening', label: 'Evening', timing: '5:00 PM – 11:00 PM', icon: '🌆' },
 ];
 const GUEST_RANGES = [
   { label: 'Up to 100', value: '100' },
@@ -92,7 +92,14 @@ const CheckAvailability = () => {
   const [toast, setToast] = useState(null);
 
   const selectedHall = halls.find(h => h.id === selectedHallId);
-  const totalPrice = timeSlot.price;
+  const getSlotPrice = (hall, slotId) => {
+    if (!hall) return 0;
+    if (slotId === 'morning') return hall.morning_price || hall.price || 0;
+    if (slotId === 'evening') return hall.evening_price || hall.price || 0;
+    return hall.price || 0;
+  };
+
+  const totalPrice = getSlotPrice(selectedHall, timeSlot.id);
   const discountAmount = appliedCoupon ? appliedCoupon.discount_amount : 0;
   const finalPrice = totalPrice - discountAmount;
   const advancePayment = Math.max(3000 - discountAmount, 0); // Apply discount to advance payment
@@ -652,7 +659,7 @@ const CheckAvailability = () => {
                             </div>
                             <div className="text-right">
                               <p className={`font-bold text-base ${timeSlot.id === slot.id ? 'text-primary' : 'text-text'}`}>
-                                ₹{slot.price.toLocaleString('en-IN')}
+                                ₹{getSlotPrice(selectedHall, slot.id).toLocaleString('en-IN')}
                               </p>
                               <p className="text-xs text-gray-400">per event</p>
                             </div>
@@ -803,7 +810,7 @@ const CheckAvailability = () => {
                           <p className="text-gray-600 font-medium">Total Hall Rental ({timeSlot.label} Slot)</p>
                           <p className="text-xs text-gray-400">{timeSlot.timing}</p>
                         </div>
-                        <span className="font-bold text-base text-text">₹{timeSlot.price.toLocaleString('en-IN')}</span>
+                        <span className="font-bold text-base text-text">₹{getSlotPrice(selectedHall, timeSlot.id).toLocaleString('en-IN')}</span>
                       </div>
                       
                       {/* Coupon Section */}
