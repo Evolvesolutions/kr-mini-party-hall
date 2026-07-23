@@ -567,7 +567,6 @@ const CheckAvailability = () => {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2">
                               <p className={`font-semibold text-sm truncate ${selectedHallId===hall.id ? 'text-primary' : 'text-text'}`}>{hall.name}</p>
-                              <span className="text-primary font-bold text-sm whitespace-nowrap">₹{hall.price.toLocaleString('en-IN')}</span>
                             </div>
                             <p className="text-xs text-gray-400 mt-0.5">{hall.area} • Up to {hall.capacity} guests</p>
                             <p className="text-xs text-gray-500 mt-1 line-clamp-1">{hall.description}</p>
@@ -723,7 +722,7 @@ const CheckAvailability = () => {
                       placeholder="your@email.com" />
                   </Field>
 
-                  <Field label="City / Area" icon={MapPin} error={errors.customer_address}>
+                  <Field label="Enter Your Full Address *" icon={MapPin} error={errors.customer_address}>
                     <input type="text" value={form.customer_address}
                       onChange={e => setForm({...form, customer_address: e.target.value})}
                       className={inputClass + (errors.customer_address ? ' border-red-300 ring-red-200' : '')}
