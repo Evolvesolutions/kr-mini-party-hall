@@ -4,10 +4,11 @@ import { useAuth } from '../context/AuthContext';
 import {
   LayoutDashboard, CalendarCheck, Users, Images,
   Home, LogOut, Menu, X, Trash2, Edit, Plus, CheckCircle,
-  XCircle, Clock, ChevronRight, Building2, Maximize, FileText
+  XCircle, Clock, ChevronRight, Building2, Maximize, FileText, Ticket
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { generateInvoicePDF } from '../utils/invoice';
+import Toast from '../components/Toast';
 
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? 'http://localhost:8000'
@@ -19,6 +20,7 @@ function Admin() {
   const [users, setUsers] = useState([]);
   const [gallery, setGallery] = useState([]);
   const [halls, setHalls] = useState([]);
+  const [coupons, setCoupons] = useState([]);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -41,6 +43,7 @@ function Admin() {
     hall_id: ''
   });
   const [offlineLoading, setOfflineLoading] = useState(false);
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     if (token && isAdmin) {
@@ -51,16 +54,18 @@ function Admin() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [bookingsRes, usersRes, galleryRes, hallsRes] = await Promise.all([
+      const [bookingsRes, usersRes, galleryRes, hallsRes, couponsRes] = await Promise.all([
         fetch(`${API_URL}/api/admin/bookings`, { headers: { Authorization: `Bearer ${token}` } }),
         fetch(`${API_URL}/api/admin/users`, { headers: { Authorization: `Bearer ${token}` } }),
         fetch(`${API_URL}/api/gallery`),
-        fetch(`${API_URL}/api/halls`)
+        fetch(`${API_URL}/api/halls`),
+        fetch(`${API_URL}/api/admin/coupons`, { headers: { Authorization: `Bearer ${token}` } })
       ]);
       if (bookingsRes.ok) setBookings(await bookingsRes.json());
       if (usersRes.ok) setUsers(await usersRes.json());
       if (galleryRes.ok) setGallery(await galleryRes.json());
       if (hallsRes.ok) setHalls(await hallsRes.json());
+      if (couponsRes.ok) setCoupons(await couponsRes.json());
     } catch (err) {
       setError('Error connecting to server');
     } finally {
@@ -228,6 +233,92 @@ function Admin() {
     }
   };
 
+  // Coupon Management Functions
+  const createDefaultCoupons = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/admin/coupons/create`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setError('');
+        fetchData();
+        setToast({ message: data.message, type: 'success' });
+      } else {
+        const errorData = await res.json();
+        setError(errorData.detail || 'Error creating coupons');
+        setToast({ message: errorData.detail || 'Error creating coupons', type: 'error' });
+      }
+    } catch {
+      setError('Error creating coupons');
+      setToast({ message: 'Error creating coupons', type: 'error' });
+    }
+  };
+
+  const publishCoupon = async (couponId) => {
+    if (!window.confirm('Are you sure you want to publish this coupon? This will unpublish any currently active coupon.')) return;
+    try {
+      const res = await fetch(`${API_URL}/api/admin/coupons/${couponId}/publish`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        fetchData();
+        setToast({ message: 'Coupon published successfully', type: 'success' });
+      } else {
+        const errorData = await res.json();
+        setError(errorData.detail || 'Error publishing coupon');
+        setToast({ message: errorData.detail || 'Error publishing coupon', type: 'error' });
+      }
+    } catch {
+      setError('Error publishing coupon');
+      setToast({ message: 'Error publishing coupon', type: 'error' });
+    }
+  };
+
+  const disableCoupon = async (couponId) => {
+    if (!window.confirm('Are you sure you want to disable this coupon?')) return;
+    try {
+      const res = await fetch(`${API_URL}/api/admin/coupons/${couponId}/disable`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        fetchData();
+        setToast({ message: 'Coupon disabled successfully', type: 'success' });
+      } else {
+        const errorData = await res.json();
+        setError(errorData.detail || 'Error disabling coupon');
+        setToast({ message: errorData.detail || 'Error disabling coupon', type: 'error' });
+      }
+    } catch {
+      setError('Error disabling coupon');
+      setToast({ message: 'Error disabling coupon', type: 'error' });
+    }
+  };
+
+  const deleteCoupon = async (couponId) => {
+    if (!window.confirm('Are you sure you want to delete this coupon?')) return;
+    try {
+      const res = await fetch(`${API_URL}/api/admin/coupons/${couponId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        fetchData();
+        setToast({ message: 'Coupon deleted successfully', type: 'success' });
+      } else {
+        const errorData = await res.json();
+        setError(errorData.detail || 'Error deleting coupon');
+        setToast({ message: errorData.detail || 'Error deleting coupon', type: 'error' });
+      }
+    } catch {
+      setError('Error deleting coupon');
+      setToast({ message: 'Error deleting coupon', type: 'error' });
+    }
+  };
+
   if (!token || !isAdmin) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center p-4">
@@ -248,6 +339,7 @@ function Admin() {
     { id: 'users', label: 'Users', icon: Users, badge: users.length },
     { id: 'gallery', label: 'Gallery', icon: Images, badge: gallery.length },
     { id: 'halls', label: 'Halls', icon: Building2, badge: halls.length },
+    { id: 'coupons', label: 'Coupons', icon: Ticket, badge: coupons.length },
   ];
 
   const stats = [
@@ -609,6 +701,76 @@ function Admin() {
                 </motion.div>
               )}
 
+              {/* Coupons */}
+              {activeTab === 'coupons' && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold text-gray-800">Coupons Management ({coupons.length})</h2>
+                    <button onClick={createDefaultCoupons} className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium flex items-center gap-2">
+                      <Plus size={16} /> Create Coupons
+                    </button>
+                  </div>
+                  <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                    {coupons.length === 0 ? (
+                      <div className="p-12 text-center text-gray-400">
+                        <Ticket size={40} className="mx-auto mb-3 opacity-40" />
+                        <p>No coupons yet. Click "Create Coupons" to generate default coupons!</p>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-100">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              {['Coupon Code', 'Discount', 'Status', 'Published', 'Valid From', 'Valid Till', 'Created', 'Actions'].map(h => (
+                                <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-50">
+                            {coupons.map(coupon => (
+                              <tr key={coupon.id} className="hover:bg-gray-50 transition-colors">
+                                <td className="px-5 py-4">
+                                  <span className="font-mono text-sm font-semibold text-purple-600 bg-purple-50 px-2 py-1 rounded">{coupon.coupon_code}</span>
+                                </td>
+                                <td className="px-5 py-4 text-sm font-semibold text-green-600">₹{coupon.discount_amount}</td>
+                                <td className="px-5 py-4">
+                                  <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
+                                    coupon.status === 'active' ? 'bg-green-100 text-green-700' :
+                                    coupon.status === 'disabled' ? 'bg-red-100 text-red-700' :
+                                    'bg-gray-100 text-gray-600'
+                                  }`}>{coupon.status}</span>
+                                </td>
+                                <td className="px-5 py-4">
+                                  {coupon.is_published ? (
+                                    <span className="text-xs px-2 py-1 rounded-full font-semibold bg-purple-100 text-purple-700">Yes</span>
+                                  ) : (
+                                    <span className="text-xs px-2 py-1 rounded-full font-semibold bg-gray-100 text-gray-600">No</span>
+                                  )}
+                                </td>
+                                <td className="px-5 py-4 text-sm text-gray-600">{new Date(coupon.valid_from).toLocaleString()}</td>
+                                <td className="px-5 py-4 text-sm text-gray-600">{new Date(coupon.valid_till).toLocaleString()}</td>
+                                <td className="px-5 py-4 text-sm text-gray-400">{new Date(coupon.created_at).toLocaleDateString()}</td>
+                                <td className="px-5 py-4 text-sm space-x-2">
+                                  <div className="flex flex-wrap gap-2 items-center">
+                                    {!coupon.is_published && coupon.status === 'active' && (
+                                      <button onClick={() => publishCoupon(coupon.id)} className="text-green-600 hover:text-green-800 font-medium">Publish</button>
+                                    )}
+                                    {coupon.status === 'active' && (
+                                      <button onClick={() => disableCoupon(coupon.id)} className="text-red-500 hover:text-red-700 font-medium">Disable</button>
+                                    )}
+                                    <button onClick={() => deleteCoupon(coupon.id)} className="text-gray-500 hover:text-red-600 font-medium">Delete</button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+
               {/* Halls */}
               {activeTab === 'halls' && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
@@ -805,6 +967,15 @@ function Admin() {
             </form>
           </motion.div>
         </div>
+      )}
+
+      {/* Toast Notifications */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
       )}
     </div>
   );

@@ -1,10 +1,14 @@
-export const generateInvoicePDF = (booking, hall) => {
-  const printWindow = window.open('', '_blank');
+export const generateInvoicePDF = (booking, hall, options = {}) => {
   const dateStr = new Date(booking.event_date || booking.created_at).toLocaleDateString();
   const bookingId = booking.id || booking._id || 'booking';
   const invoiceNo = `INV-${bookingId.slice(-8).toUpperCase()}`;
   const hallPrice = booking.price || hall?.price || 0;
-  const advancePaid = booking.amount_paid || 3000;
+  const couponDiscount = booking.discount_amount || 0;
+  const advancePaid = typeof booking.amount_paid === 'number'
+    ? booking.amount_paid
+    : typeof booking.price === 'number'
+      ? booking.price - couponDiscount
+      : hallPrice - couponDiscount || 3000;
   const balanceDue = hallPrice - advancePaid;
 
   const htmlContent = `
@@ -37,8 +41,8 @@ export const generateInvoicePDF = (booking, hall) => {
         <div class="header">
           <div>
             <div class="logo">KR Mini Party Hall</div>
-            <p style="margin: 5px 0; font-size: 14px;">Grand Kalyana, Coimbatore</p>
-            <p style="margin: 5px 0; font-size: 14px;">Contact: +91 98765 43210</p>
+            <p style="margin: 5px 0; font-size: 14px;">1, Kakkan Street, First Main Rd,<br/>Pozhichalur, Chennai, Tamil Nadu 600075</p>
+            <p style="margin: 5px 0; font-size: 14px;">Contact: +91 7550120574</p>
           </div>
           <div>
             <div class="invoice-title">INVOICE</div>
@@ -88,6 +92,12 @@ export const generateInvoicePDF = (booking, hall) => {
               <td><b>Total Rental:</b></td>
               <td style="text-align: right;">₹${hallPrice.toLocaleString('en-IN')}</td>
             </tr>
+            ${couponDiscount > 0 ? `
+            <tr style="color: #2e7d32;">
+              <td><b>Coupon Discount (${booking.coupon_code || 'Coupon'})</b></td>
+              <td style="text-align: right;">-₹${couponDiscount.toLocaleString('en-IN')}</td>
+            </tr>
+            ` : ''}
             <tr style="color: #2e7d32;">
               <td><b>Advance Paid (Online):</b></td>
               <td style="text-align: right;">₹${advancePaid.toLocaleString('en-IN')}</td>
@@ -107,15 +117,26 @@ export const generateInvoicePDF = (booking, hall) => {
 
         <script>
           window.onload = function() {
-            setTimeout(function() {
-              window.print();
-            }, 500);
+            if (${autoPrint}) {
+              setTimeout(function() {
+                window.print();
+              }, 500);
+            }
           };
         </script>
       </body>
     </html>
   `;
 
-  printWindow.document.write(htmlContent);
-  printWindow.document.close();
+  const blob = new Blob([htmlContent], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const downloadLink = document.createElement('a');
+  downloadLink.href = url;
+  downloadLink.download = `${invoiceNo}.html`;
+  downloadLink.style.display = 'none';
+  document.body.appendChild(downloadLink);
+  downloadLink.click();
+  document.body.removeChild(downloadLink);
+
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 };

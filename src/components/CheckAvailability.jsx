@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { generateInvoicePDF } from '../utils/invoice';
+import Toast from './Toast';
+import { useAuth } from '../context/AuthContext';
 import {
   Calendar, Users, Building2, CheckCircle, ChevronLeft, ChevronRight,
   Loader2, User, Phone, Mail, MapPin, Clock, Star, CreditCard,
-  Tag, FileText, ArrowRight, ArrowLeft, Sparkles, IndianRupee
+  Tag, FileText, ArrowRight, ArrowLeft, Sparkles, IndianRupee, Ticket, X
 } from 'lucide-react';
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -47,10 +49,23 @@ const CheckAvailability = () => {
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
   const [selectedDate, setSelectedDate] = useState(null);
-  const [bookedDates, setBookedDates] = useState([]);
+  const [bookedSlots, setBookedSlots] = useState({});
   const [halls, setHalls] = useState([]);
   const [selectedHallId, setSelectedHallId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [slotError, setSlotError] = useState('');
+
+  const getDaySlotStatus = (day) => {
+    const booked = bookedSlots[day] || [];
+    return {
+      morningBooked: booked.includes('Morning'),
+      eveningBooked: booked.includes('Evening'),
+      fullyBooked: booked.length >= TIME_SLOTS.length,
+      bookedCount: booked.length,
+    };
+  };
+
+  const selectedDayStatus = selectedDate ? getDaySlotStatus(selectedDate) : null;
   const [bookingSubmitted, setBookingSubmitted] = useState(false);
   const [bookingRef, setBookingRef] = useState('');
   const [errors, setErrors] = useState({});
@@ -69,8 +84,18 @@ const CheckAvailability = () => {
     special_requirements: '',
   });
 
+  // Coupon state
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponError, setCouponError] = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [toast, setToast] = useState(null);
+
   const selectedHall = halls.find(h => h.id === selectedHallId);
   const totalPrice = timeSlot.price;
+  const discountAmount = appliedCoupon ? appliedCoupon.discount_amount : 0;
+  const finalPrice = totalPrice - discountAmount;
+  const advancePayment = Math.max(3000 - discountAmount, 0); // Apply discount to advance payment
 
   useEffect(() => {
     const fetchData = async () => {
@@ -82,21 +107,36 @@ const CheckAvailability = () => {
         const hallsData = await hallsRes.json();
         const bookingsData = await bookingsRes.json();
         setHalls(hallsData);
-        if (hallsData.length > 0) setSelectedHallId(hallsData[0].id);
-        const booked = bookingsData
-          .map(b => {
+        const initialHallId = selectedHallId || hallsData?.[0]?.id;
+        if (!selectedHallId && hallsData.length > 0) setSelectedHallId(initialHallId);
+
+        const slotMap = {};
+        if (initialHallId) {
+          bookingsData.forEach(b => {
             const d = new Date(b.event_date);
-            if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) return d.getDate();
-            return null;
-          })
-          .filter(Boolean);
-        setBookedDates(booked);
+            if (d.getMonth() !== currentMonth || d.getFullYear() !== currentYear) return;
+            if (b.hall_id !== initialHallId) return;
+            const day = d.getDate();
+            const slotLabel = (b.time_slot || '').split('(')[0].trim();
+            if (!slotMap[day]) slotMap[day] = [];
+            if (slotLabel && !slotMap[day].includes(slotLabel)) {
+              slotMap[day].push(slotLabel);
+            }
+          });
+        }
+        setBookedSlots(slotMap);
+        const selectedBookedSlots = selectedDate ? slotMap[selectedDate] || [] : [];
+        if (selectedDate && selectedBookedSlots.includes(timeSlot.label)) {
+          setSlotError(`${timeSlot.label} slot is already booked for the selected date.`);
+        } else {
+          setSlotError('');
+        }
       } catch (err) {
         console.error('Failed to fetch data:', err);
       }
     };
     fetchData();
-  }, [currentMonth, currentYear]);
+  }, [currentMonth, currentYear, selectedHallId]);
 
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDay = new Date(currentYear, currentMonth, 1).getDay();
@@ -104,17 +144,47 @@ const CheckAvailability = () => {
   const prevMonth = () => {
     if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(y => y - 1); }
     else setCurrentMonth(m => m - 1);
+    setSelectedDate(null);
   };
   const nextMonth = () => {
     if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear(y => y + 1); }
     else setCurrentMonth(m => m + 1);
+    setSelectedDate(null);
   };
+
+  useEffect(() => {
+    if (!selectedDate) {
+      setSlotError('');
+      return;
+    }
+    const selectedBookedSlots = bookedSlots[selectedDate] || [];
+    if (selectedBookedSlots.includes(timeSlot.label)) {
+      setSlotError(`${timeSlot.label} slot is already booked for the selected date.`);
+    } else {
+      setSlotError('');
+    }
+  }, [selectedDate, timeSlot, bookedSlots]);
+
+  useEffect(() => {
+    if (!selectedDate) return;
+    const selectedBookedSlots = bookedSlots[selectedDate] || [];
+    if (selectedBookedSlots.includes(timeSlot.label)) {
+      const availableSlot = TIME_SLOTS.find(slot => !selectedBookedSlots.includes(slot.label));
+      if (availableSlot) setTimeSlot(availableSlot);
+    }
+  }, [selectedDate, bookedSlots]);
 
   const validateStep = (s) => {
     const errs = {};
     if (s === 0) {
       if (!selectedDate) errs.date = 'Please select a date.';
       if (!selectedHallId) errs.hall = 'Please select a hall.';
+    }
+    if (s === 1) {
+      const bookedSlotsForDay = bookedSlots[selectedDate] || [];
+      if (selectedDate && bookedSlotsForDay.includes(timeSlot.label)) {
+        errs.time_slot = `${timeSlot.label} slot is already booked. Please choose another slot or date.`;
+      }
     }
     if (s === 2) {
       if (!form.customer_name.trim()) errs.customer_name = 'Name is required.';
@@ -140,7 +210,7 @@ const CheckAvailability = () => {
       const orderRes = await fetch(`${API_URL}/api/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hall_id: selectedHallId, amount: 3000 * 100 }), // flat 3,000 INR advance
+        body: JSON.stringify({ hall_id: selectedHallId, amount: advancePayment * 100 }), // advance payment with discount
       });
       const orderData = await orderRes.json();
       if (!orderRes.ok) throw new Error(orderData.detail || 'Failed to create order');
@@ -154,8 +224,7 @@ const CheckAvailability = () => {
         order_id: orderData.order_id,
         handler: async (response) => {
           try {
-            const eventDate = new Date(currentYear, currentMonth, selectedDate)
-              .toISOString().split('T')[0];
+            const eventDate = `${currentYear.toString().padStart(4,'0')}-${(currentMonth + 1).toString().padStart(2,'0')}-${selectedDate.toString().padStart(2,'0')}`;
 
             const bookingData = {
               ...form,
@@ -165,7 +234,9 @@ const CheckAvailability = () => {
               time_slot: `${timeSlot.label} (${timeSlot.timing})`,
               hall_id: selectedHallId,
               package_id: null,
-              amount_paid: 3000, // advance paid is 3,000
+              amount_paid: advancePayment, // advance paid with discount
+              coupon_code: appliedCoupon?.coupon_code || null,
+              discount_amount: discountAmount,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_order_id: response.razorpay_order_id,
               razorpay_signature: response.razorpay_signature,
@@ -212,9 +283,53 @@ const CheckAvailability = () => {
   const resetAll = () => {
     setStep(0); setSelectedDate(null); setBookingSubmitted(false);
     setForm({ customer_name:'', customer_phone:'', customer_email:'', customer_address:'', special_requirements:'' });
-    setEventType('Wedding'); setTimeSlot(TIME_SLOTS[2]); setGuests('200');
+    setEventType('Wedding'); setTimeSlot(TIME_SLOTS[0]); setGuests('100');
     setErrors({});
+    setCouponCode('');
+    setAppliedCoupon(null);
+    setCouponError('');
   };
+
+  const validateCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponError('Please enter a coupon code');
+      return;
+    }
+
+    setCouponLoading(true);
+    setCouponError('');
+    try {
+      const res = await fetch(`${API_URL}/api/coupons/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ coupon_code: couponCode.trim() })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setAppliedCoupon(data);
+        setCouponCode('');
+        setCouponError('');
+        setToast({ message: `Coupon ${data.coupon_code} applied successfully! ₹${data.discount_amount} discount`, type: 'success' });
+      } else {
+        setCouponError(data.detail || 'Invalid coupon code');
+        setToast({ message: data.detail || 'Invalid coupon code', type: 'error' });
+      }
+    } catch (err) {
+      setCouponError('Error validating coupon. Please try again.');
+      setToast({ message: 'Error validating coupon. Please try again.', type: 'error' });
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponError('');
+    setToast({ message: 'Coupon removed', type: 'warning' });
+  };
+
+  const { isAdmin } = useAuth();
 
   // ── Booking Confirmed Screen ───────────────────────────────────────────────
   if (bookingSubmitted) {
@@ -225,10 +340,12 @@ const CheckAvailability = () => {
       customer_phone: form.customer_phone,
       customer_address: form.customer_address,
       event_type: eventType,
-      event_date: new Date(currentYear, currentMonth, selectedDate).toISOString().split('T')[0],
+      event_date: `${currentYear.toString().padStart(4,'0')}-${(currentMonth + 1).toString().padStart(2,'0')}-${selectedDate.toString().padStart(2,'0')}`,
       time_slot: `${timeSlot.label} (${timeSlot.timing})`,
       price: totalPrice,
-      amount_paid: 3000
+      discount_amount: discountAmount,
+      coupon_code: appliedCoupon?.coupon_code || null,
+      amount_paid: advancePayment
     };
 
     return (
@@ -267,22 +384,28 @@ const CheckAvailability = () => {
                 <span className="text-gray-500">Total Price</span>
                 <span className="font-semibold text-text">₹{totalPrice.toLocaleString('en-IN')}</span>
               </div>
+              {appliedCoupon && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Coupon Discount ({appliedCoupon.coupon_code})</span>
+                  <span className="font-bold text-green-600">-₹{discountAmount.toLocaleString('en-IN')}</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Advance Paid</span>
-                <span className="font-bold text-green-600">₹3,000</span>
+                <span className="font-bold text-green-600">₹{advancePayment.toLocaleString('en-IN')}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Balance Due at Venue</span>
-                <span className="font-semibold text-primary">₹{(totalPrice - 3000).toLocaleString('en-IN')}</span>
+                <span className="font-semibold text-primary">₹{(finalPrice - advancePayment).toLocaleString('en-IN')}</span>
               </div>
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
-                onClick={() => generateInvoicePDF(bookingDetailsForInvoice, selectedHall)}
+                onClick={() => generateInvoicePDF(bookingDetailsForInvoice, selectedHall, { autoPrint: !isAdmin })}
                 className="bg-primary hover:bg-accent text-white px-6 py-3 rounded-full font-bold text-sm transition-all shadow-md flex items-center justify-center gap-2"
               >
-                <FileText size={16} /> Download Invoice PDF
+                <FileText size={16} /> {isAdmin ? 'Download Invoice PDF' : 'Print Invoice'}
               </button>
               <button
                 onClick={() => navigate('/')}
@@ -377,19 +500,25 @@ const CheckAvailability = () => {
                     {Array(firstDay).fill(null).map((_,i) => <div key={`e${i}`} />)}
                     {Array(daysInMonth).fill(null).map((_,i) => {
                       const day = i + 1;
-                      const isBooked = bookedDates.includes(day);
+                      const { morningBooked, eveningBooked, fullyBooked } = getDaySlotStatus(day);
+                      const slotCount = (morningBooked ? 1 : 0) + (eveningBooked ? 1 : 0);
                       const isSelected = selectedDate === day;
                       const isToday = day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
                       const isPast = new Date(currentYear, currentMonth, day) < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                      const isDisabledDay = fullyBooked || isPast;
+                      const colorClass = fullyBooked
+                        ? 'bg-red-100 text-red-700'
+                        : slotCount === 1
+                          ? 'bg-yellow-100 text-yellow-700'
+                          : 'bg-green-100 text-green-700';
                       return (
-                        <button key={day} disabled={isBooked || isPast}
-                          onClick={() => setSelectedDate(day)}
+                        <button key={day} disabled={isDisabledDay}
+                          onClick={() => !isDisabledDay && setSelectedDate(day)}
                           className={`aspect-square flex items-center justify-center rounded-full text-xs font-medium transition-all duration-200
-                            ${isBooked ? 'bg-red-50 text-red-300 cursor-not-allowed line-through' : ''}
-                            ${isPast && !isBooked ? 'text-gray-300 cursor-not-allowed' : ''}
-                            ${isSelected && !isBooked ? 'bg-primary text-white shadow-lg shadow-primary/30 scale-110' : ''}
-                            ${!isSelected && !isBooked && !isPast ? 'hover:bg-secondary text-text hover:text-accent' : ''}
-                            ${isToday && !isSelected ? 'border-2 border-primary text-primary font-bold' : ''}
+                            ${isDisabledDay ? 'cursor-not-allowed opacity-40' : ''}
+                            ${isSelected ? 'shadow-lg shadow-primary/30 scale-110' : 'hover:scale-105'}
+                            ${isToday ? 'border-2 border-primary font-bold' : ''}
+                            ${!isPast ? colorClass : ''}
                           `}>
                           {day}
                         </button>
@@ -397,12 +526,19 @@ const CheckAvailability = () => {
                     })}
                   </div>
                   {/* Legend */}
-                  <div className="flex items-center gap-4 mt-5 pt-4 border-t border-gray-100">
-                    {[['bg-primary','Available'],['bg-red-200','Booked'],['border-2 border-primary bg-transparent','Today']].map(([cls,lbl]) => (
+                  <div className="flex flex-wrap items-center gap-4 mt-5 pt-4 border-t border-gray-100">
+                    {[['bg-green-100 text-green-700','Both Available'],['bg-yellow-100 text-yellow-700','One Slot Booked'],['bg-red-100 text-red-700','Fully Booked'],['border-2 border-primary bg-transparent text-primary','Today']].map(([cls,lbl]) => (
                       <div key={lbl} className="flex items-center gap-1.5 text-xs text-gray-500">
                         <div className={`w-3 h-3 rounded-full ${cls}`} />{lbl}
                       </div>
                     ))}
+                  </div>
+                  <div className="mt-6 rounded-3xl border border-primary/20 bg-white/90 p-4 shadow-sm">
+                    <p className="text-sm font-semibold text-text mb-2">Location</p>
+                    <p className="text-sm text-gray-600">1, Kakkan Street, First Main Rd, Pozhichalur, Chennai, Tamil Nadu 600075</p>
+                    <a href="https://maps.app.goo.gl/BpuYfH5M1oQ6Gpxw5?g_st=ac" target="_blank" rel="noreferrer"
+                      className="inline-flex items-center justify-center mt-4 rounded-full border border-primary bg-primary text-white px-5 py-3 text-sm font-semibold shadow-sm hover:bg-primary/90 transition-colors">
+                      View Map</a>
                   </div>
                   {errors.date && <p className="text-red-500 text-xs mt-2">{errors.date}</p>}
                 </div>
@@ -437,6 +573,34 @@ const CheckAvailability = () => {
 
                   {/* Selected Summary */}
                   {selectedDate && (
+                    <div className="mt-4 bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
+                      <h4 className="font-semibold text-sm text-text mb-3">Available Slots</h4>
+                      <div className="space-y-3 text-sm">
+                        {['Morning','Evening'].map(slotLabel => {
+                          const booked = bookedSlots[selectedDate]?.includes(slotLabel);
+                          return (
+                            <div key={slotLabel} className="flex items-center justify-between gap-3 p-3 rounded-2xl border border-gray-100 bg-gray-50">
+                              <div>
+                                <p className="font-medium">{slotLabel === 'Morning' ? '☀ Morning' : '🌙 Evening'}</p>
+                                <p className={`text-xs ${booked ? 'text-red-600' : 'text-green-600'}`}>
+                                  Status: {booked ? 'Booked' : 'Available'}
+                                </p>
+                              </div>
+                              {booked ? (
+                                <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">Booked</span>
+                              ) : (
+                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Available</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {selectedDayStatus?.fullyBooked && (
+                          <div className="text-sm text-red-700 font-semibold">Fully Booked</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {selectedDate && (
                     <div className="mt-4 bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 text-sm">
                       <span className="text-gray-500">Selected: </span>
                       <span className="text-primary font-semibold">{selectedDate} {MONTHS[currentMonth]}, {currentYear}</span>
@@ -466,12 +630,18 @@ const CheckAvailability = () => {
 
                 <div className="space-y-6">
                   {/* Time Slot */}
-                  <Field label="Time Slot" icon={Clock}>
+                  <Field label="Time Slot" icon={Clock} error={errors.time_slot || slotError}>
                     <div className="space-y-3 mt-1">
-                      {TIME_SLOTS.map(slot => (
-                        <button key={slot.id} onClick={() => setTimeSlot(slot)}
+                      {TIME_SLOTS.map(slot => {
+                      const bookedSlotsForDay = selectedDate ? bookedSlots[selectedDate] || [] : [];
+                      const slotIsBooked = selectedDate ? bookedSlotsForDay.includes(slot.label) : false;
+                      return (
+                        <button key={slot.id}
+                          onClick={() => !slotIsBooked && setTimeSlot(slot)}
+                          disabled={slotIsBooked}
                           className={`w-full text-left rounded-2xl border-2 p-4 transition-all duration-200
-                            ${timeSlot.id === slot.id ? 'bg-primary/5 border-primary shadow-md' : 'border-gray-100 hover:border-primary/40'}`}>
+                            ${slotIsBooked ? 'border-red-200 bg-red-50 text-red-500 cursor-not-allowed opacity-60' : ''}
+                            ${!slotIsBooked && timeSlot.id === slot.id ? 'bg-primary/5 border-primary shadow-md' : 'border-gray-100 hover:border-primary/40'}`}>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                               <span className="text-2xl">{slot.icon}</span>
@@ -487,13 +657,18 @@ const CheckAvailability = () => {
                               <p className="text-xs text-gray-400">per event</p>
                             </div>
                           </div>
-                          {timeSlot.id === slot.id && (
+                          {slotIsBooked ? (
+                            <div className="mt-2 pt-2 border-t border-red-200 flex items-center gap-1 text-xs text-red-600">
+                              <X size={11} /> Booked for selected date
+                            </div>
+                          ) : timeSlot.id === slot.id ? (
                             <div className="mt-2 pt-2 border-t border-primary/20 flex items-center gap-1 text-xs text-primary">
                               <CheckCircle size={11} /> Selected
                             </div>
-                          )}
+                          ) : null}
                         </button>
-                      ))}
+                      );
+                    })}
                     </div>
                   </Field>
 
@@ -630,17 +805,71 @@ const CheckAvailability = () => {
                         </div>
                         <span className="font-bold text-base text-text">₹{timeSlot.price.toLocaleString('en-IN')}</span>
                       </div>
+                      
+                      {/* Coupon Section */}
+                      {!appliedCoupon ? (
+                        <div className="bg-white border border-gray-200 rounded-xl p-3">
+                          <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 mb-2">
+                            <Ticket size={12} className="text-primary" />
+                            Have a coupon?
+                          </label>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={couponCode}
+                              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                              placeholder="Enter coupon code"
+                              className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary uppercase"
+                              onKeyPress={(e) => e.key === 'Enter' && validateCoupon()}
+                            />
+                            <button
+                              onClick={validateCoupon}
+                              disabled={couponLoading}
+                              className="bg-primary hover:bg-accent text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                            >
+                              {couponLoading ? 'Applying...' : 'Apply'}
+                            </button>
+                          </div>
+                          {couponError && (
+                            <p className="text-red-500 text-xs mt-2">{couponError}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Ticket size={14} className="text-green-600" />
+                            <div>
+                              <p className="text-xs font-semibold text-green-700">{appliedCoupon.coupon_code} Applied</p>
+                              <p className="text-xs text-green-600">₹{discountAmount.toLocaleString('en-IN')} discount</p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={removeCoupon}
+                            className="text-red-500 hover:text-red-700 p-1"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      )}
+
+                      {appliedCoupon && (
+                        <div className="flex justify-between items-center text-green-600">
+                          <span className="font-medium">Coupon Discount</span>
+                          <span className="font-bold">-₹{discountAmount.toLocaleString('en-IN')}</span>
+                        </div>
+                      )}
+
                       <div className="flex justify-between text-xs text-gray-400 border-t border-dashed border-gray-200 pt-2">
                         <span>GST & Taxes</span>
                         <span>Included</span>
                       </div>
                       <div className="flex justify-between text-xs text-gray-500 pt-1">
                         <span>Remaining Balance (Pay at Venue)</span>
-                        <span className="font-semibold text-text">₹{(totalPrice - 3000).toLocaleString('en-IN')}</span>
+                        <span className="font-semibold text-text">₹{(finalPrice - advancePayment).toLocaleString('en-IN')}</span>
                       </div>
                       <div className="bg-primary/10 rounded-xl px-4 py-3 flex justify-between font-bold text-base mt-1">
                         <span className="text-text">Booking Advance (Payable Now)</span>
-                        <span className="text-primary text-xl">₹3,000</span>
+                        <span className="text-primary text-xl">₹{advancePayment.toLocaleString('en-IN')}</span>
                       </div>
                     </div>
 
@@ -688,6 +917,15 @@ const CheckAvailability = () => {
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* Toast Notifications */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </section>
   );
 };

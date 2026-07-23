@@ -1,10 +1,17 @@
 import { motion } from 'framer-motion';
+import CouponBanner from './CouponBanner';
 import { Link } from 'react-router-dom';
 import { ChevronDown, Calendar, Users, Building } from 'lucide-react';
 
 const Hero = () => {
   return (
     <section id="home" className="relative h-screen flex items-center justify-center overflow-hidden">
+      {/* Coupon banner inside hero (centered, below navbar) */}
+      <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-40 w-full px-4">
+        <div className="max-w-7xl mx-auto">
+          <CouponBanner />
+        </div>
+      </div>
       {/* Background Image with Overlay */}
       <div 
         className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
@@ -53,6 +60,9 @@ const Hero = () => {
           <button onClick={() => document.getElementById('gallery').scrollIntoView({ behavior: 'smooth' })} className="bg-transparent border border-white hover:bg-white hover:text-text text-white font-body px-8 py-4 rounded-full transition-all duration-300 transform hover:-translate-y-1 font-medium text-lg w-full sm:w-auto">
             View Gallery
           </button>
+          <a href="https://maps.app.goo.gl/BpuYfH5M1oQ6Gpxw5?g_st=ac" target="_blank" rel="noreferrer" className="bg-white text-primary font-body px-8 py-4 rounded-full transition-all duration-300 transform hover:-translate-y-1 hover:bg-primary hover:text-white font-medium text-lg w-full sm:w-auto text-center block border border-transparent">
+            View Location
+          </a>
         </motion.div>
       </div>
 

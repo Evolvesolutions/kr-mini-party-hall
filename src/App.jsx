@@ -19,6 +19,7 @@ function Layout({ children }) {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
 
+
   useEffect(() => {
     if (!location.hash) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -37,7 +38,7 @@ function Layout({ children }) {
     <div className="flex flex-col min-h-screen">
       {!isAdminRoute && <Navbar />}
       <main className="flex-grow">
-      {!isAdminRoute && <WhatsAppButton />}
+        {!isAdminRoute && <WhatsAppButton />}
         {children}
       </main>
       {!isAdminRoute && <Footer />}
